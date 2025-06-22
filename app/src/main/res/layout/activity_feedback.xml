@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="50dp"
+            android:text="Rate Your Trip"
+            android:textColor="@android:color/black"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Trip Summary -->
+        <TextView
+            android:id="@+id/tripSummaryTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:text="Trip completed • 5.2 km • 23 min • $15.75"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/titleTextView" />
+
+        <!-- Rating Section -->
+        <TextView
+            android:id="@+id/ratingLabelTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:text="How was your ride?"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tripSummaryTextView" />
+
+        <!-- Star Rating -->
+        <LinearLayout
+            android:id="@+id/starRatingLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ratingLabelTextView">
+
+            <ImageView
+                android:id="@+id/star1"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="8dp"
+                android:src="@android:drawable/btn_star_big_off"
+                android:contentDescription="1 star" />
+
+            <ImageView
+                android:id="@+id/star2"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="8dp"
+                android:src="@android:drawable/btn_star_big_off"
+                android:contentDescription="2 stars" />
+
+            <ImageView
+                android:id="@+id/star3"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="8dp"
+                android:src="@android:drawable/btn_star_big_off"
+                android:contentDescription="3 stars" />
+
+            <ImageView
+                android:id="@+id/star4"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="8dp"
+                android:src="@android:drawable/btn_star_big_off"
+                android:contentDescription="4 stars" />
+
+            <ImageView
+                android:id="@+id/star5"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_margin="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="8dp"
+                android:src="@android:drawable/btn_star_big_off"
+                android:contentDescription="5 stars" />
+
+        </LinearLayout>
+
+        <!-- Feedback Comment -->
+        <TextView
+            android:id="@+id/commentLabelTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Additional Comments (Optional)"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/starRatingLayout" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/feedbackInputLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Tell us about your experience..."
+            app:boxStrokeColor="@android:color/black"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/commentLabelTextView">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/feedbackEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine|textCapSentences"
+                android:lines="4"
+                android:maxLines="6" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Buttons -->
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/black"
+            android:text="Submit Feedback"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/skipButton"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/feedbackInputLayout" />
+
+        <Button
+            android:id="@+id/skipButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="32dp"
+            android:background="@android:drawable/btn_default"
+            android:text="Skip"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/submitButton"
+            app:layout_constraintTop_toBottomOf="@id/feedbackInputLayout" />
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/submitButton" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

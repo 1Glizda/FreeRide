@@ -28,6 +28,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/pickUpIndicator"
             android:layout_width="9dp"

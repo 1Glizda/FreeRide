@@ -22,7 +22,6 @@ public class RideSharingApp extends Application {
         try {
             // Get API key from resources
             String apiKey = getString(R.string.google_maps_key);
-            Log.d("API_KEY_DEBUG", "API Key: " + apiKey); // Add this line
 
             // Verify API key exists
             if (apiKey == null || apiKey.isEmpty()) {
