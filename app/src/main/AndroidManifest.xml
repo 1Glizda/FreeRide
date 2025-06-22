@@ -47,6 +47,18 @@
             android:exported="false"
             android:theme="@style/Theme.FreeRide" />
 
+        <!-- Account Activity -->
+        <activity
+            android:name=".account.AccountActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FreeRide" />
+
+        <!-- Ride History Activity -->
+        <activity
+            android:name=".history.RideHistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FreeRide" />
+
         <!-- Google Maps API Key (if using maps) -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"

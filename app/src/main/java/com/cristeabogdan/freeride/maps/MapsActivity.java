@@ -8,13 +8,17 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.cristeabogdan.freeride.R;
+import com.cristeabogdan.freeride.account.AccountActivity;
+import com.cristeabogdan.freeride.auth.LoginActivity;
 import com.cristeabogdan.freeride.databinding.ActivityMapsBinding;
+import com.cristeabogdan.freeride.history.RideHistoryActivity;
 import com.cristeabogdan.freeride.network.NetworkService;
 import com.cristeabogdan.freeride.utils.AnimationUtils;
 import com.cristeabogdan.freeride.utils.MapUtils;
@@ -42,6 +46,7 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +75,7 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     private LatLng previousLatLngFromServer;
     private LatLng currentLatLngFromServer;
     private Marker movingCabMarker;
+    private boolean isMenuExpanded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +110,76 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
         });
 
         binding.nextRideButton.setOnClickListener(v -> reset());
+
+        // Menu button click listener
+        binding.menuButton.setOnClickListener(v -> toggleMenu());
+
+        // Menu item click listeners
+        binding.rideHistoryItem.setOnClickListener(v -> {
+            Intent intent = new Intent(this, RideHistoryActivity.class);
+            startActivity(intent);
+            hideMenu();
+        });
+
+        binding.accountDetailsItem.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AccountActivity.class);
+            startActivity(intent);
+            hideMenu();
+        });
+
+        binding.logoutItem.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
+
+        // Hide menu when clicking outside
+        binding.getRoot().setOnClickListener(v -> {
+            if (isMenuExpanded) {
+                hideMenu();
+            }
+        });
+    }
+
+    private void toggleMenu() {
+        if (isMenuExpanded) {
+            hideMenu();
+        } else {
+            showMenu();
+        }
+    }
+
+    private void showMenu() {
+        isMenuExpanded = true;
+        binding.expandableMenu.setVisibility(View.VISIBLE);
+        
+        // Animate menu appearance
+        binding.expandableMenu.setAlpha(0f);
+        binding.expandableMenu.setScaleX(0.8f);
+        binding.expandableMenu.setScaleY(0.8f);
+        
+        binding.expandableMenu.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(200)
+                .setInterpolator(new AccelerateDecelerateInterpolator())
+                .start();
+    }
+
+    private void hideMenu() {
+        isMenuExpanded = false;
+        
+        binding.expandableMenu.animate()
+                .alpha(0f)
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .setDuration(150)
+                .setInterpolator(new AccelerateDecelerateInterpolator())
+                .withEndAction(() -> binding.expandableMenu.setVisibility(View.GONE))
+                .start();
     }
 
     private void launchLocationAutoCompleteActivity(int requestCode) {
@@ -501,5 +577,14 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     public void showDirectionApiFailedError(String error) {
         Toast.makeText(this, error, Toast.LENGTH_LONG).show();
         reset();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isMenuExpanded) {
+            hideMenu();
+        } else {
+            super.onBackPressed();
+        }
     }
 }
