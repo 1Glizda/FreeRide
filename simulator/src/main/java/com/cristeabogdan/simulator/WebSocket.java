@@ -36,9 +36,19 @@ public class WebSocket {
                             jsonObject.getDouble("dropLat"),
                             jsonObject.getDouble("dropLng")
                     );
+                    
+                    // Get assigned car location and ID
+                    LatLng carLatLng = new LatLng(
+                            jsonObject.getDouble("carLat"),
+                            jsonObject.getDouble("carLng")
+                    );
+                    String assignedCarId = jsonObject.getString("assignedCarId");
+                    
                     Simulator.requestCab(
                             pickUpLatLng,
                             dropLatLng,
+                            carLatLng,
+                            assignedCarId,
                             webSocketListener
                     );
                     break;

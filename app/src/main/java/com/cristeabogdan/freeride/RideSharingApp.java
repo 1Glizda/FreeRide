@@ -6,6 +6,7 @@ import android.util.Log;
 import com.google.android.libraries.places.api.Places;
 import com.google.maps.GeoApiContext;
 import com.cristeabogdan.simulator.Simulator;
+import com.cristeabogdan.freeride.database.MongoDBManager;
 
 public class RideSharingApp extends Application {
     private static final String TAG = "RideSharingApp";
@@ -16,6 +17,9 @@ public class RideSharingApp extends Application {
 
         // Initialize Google services
         initializeGoogleServices();
+        
+        // Initialize MongoDB
+        initializeMongoDB();
     }
 
     private void initializeGoogleServices() {
@@ -41,8 +45,16 @@ public class RideSharingApp extends Application {
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize Google services", e);
-            // Consider showing a user-friendly error message or disabling map features
-            // You might want to track this error with Crashlytics or similar
+        }
+    }
+
+    private void initializeMongoDB() {
+        try {
+            // Initialize MongoDB connection
+            MongoDBManager.getInstance();
+            Log.d(TAG, "MongoDB manager initialized");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to initialize MongoDB", e);
         }
     }
 
@@ -56,6 +68,14 @@ public class RideSharingApp extends Application {
                 Log.e(TAG, "Error shutting down GeoApiContext", e);
             }
         }
+        
+        // Close MongoDB connection
+        try {
+            MongoDBManager.getInstance().close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error closing MongoDB connection", e);
+        }
+        
         super.onTerminate();
     }
 }

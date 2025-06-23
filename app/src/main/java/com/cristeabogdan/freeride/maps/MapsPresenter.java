@@ -3,6 +3,9 @@ package com.cristeabogdan.freeride.maps;
 import android.util.Log;
 import com.google.android.gms.maps.model.LatLng;
 import com.cristeabogdan.freeride.network.NetworkService;
+import com.cristeabogdan.freeride.h3.CarManager;
+import com.cristeabogdan.freeride.database.Car;
+import com.cristeabogdan.freeride.database.MongoDBManager;
 import com.cristeabogdan.simulator.WebSocket;
 import com.cristeabogdan.simulator.WebSocketListener;
 import com.cristeabogdan.freeride.utils.Constants;
@@ -20,6 +23,7 @@ public class MapsPresenter implements WebSocketListener {
     private final NetworkService networkService;
     private MapsView view;
     private WebSocket webSocket;
+    private String assignedCarId;
 
     public MapsPresenter(NetworkService networkService) {
         this.networkService = networkService;
@@ -39,18 +43,82 @@ public class MapsPresenter implements WebSocketListener {
     }
 
     public void requestNearbyCabs(LatLng latLng) {
-        try {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(Constants.TYPE, Constants.NEAR_BY_CABS);
-            jsonObject.put(Constants.LAT, latLng.latitude);
-            jsonObject.put(Constants.LNG, latLng.longitude);
-            webSocket.sendMessage(jsonObject.toString());
-        } catch (JSONException e) {
-            Log.e(TAG, "Error creating JSON for nearby cabs request", e);
-        }
+        // Initialize cars if needed, then show available cars
+        CarManager.initializeCarsIfNeeded(latLng.latitude, latLng.longitude, 
+            new CarManager.CarInitializationCallback() {
+                @Override
+                public void onSuccess(List<Car> cars) {
+                    Log.d(TAG, "Cars initialized successfully: " + cars.size());
+                    showAvailableCars();
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Log.e(TAG, "Failed to initialize cars", e);
+                    showAvailableCars(); // Try to show existing cars anyway
+                }
+            });
+    }
+
+    private void showAvailableCars() {
+        CarManager.getAllAvailableCars(new MongoDBManager.CarQueryCallback() {
+            @Override
+            public void onSuccess(List<Car> cars) {
+                List<LatLng> carLocations = new ArrayList<>();
+                for (Car car : cars) {
+                    carLocations.add(new LatLng(car.getLatitude(), car.getLongitude()));
+                }
+                
+                if (view != null) {
+                    view.showNearbyCabs(carLocations);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Failed to get available cars", e);
+            }
+        });
     }
 
     public void requestCab(LatLng pickUpLatLng, LatLng dropLatLng) {
+        // Use H3 algorithm to find nearest available car
+        CarManager.findNearestAvailableCar(pickUpLatLng.latitude, pickUpLatLng.longitude,
+            new CarManager.CarMatchingCallback() {
+                @Override
+                public void onCarMatched(Car car) {
+                    Log.d(TAG, "Car matched: " + car.getCarId() + " - " + car.getDriverName());
+                    assignedCarId = car.getCarId();
+                    
+                    // Inform view that cab is booked
+                    if (view != null) {
+                        view.informCabBooked();
+                    }
+                    
+                    // Start simulation with the assigned car
+                    LatLng carLocation = new LatLng(car.getLatitude(), car.getLongitude());
+                    startSimulationWithAssignedCar(carLocation, pickUpLatLng, dropLatLng);
+                }
+
+                @Override
+                public void onNoCarAvailable() {
+                    Log.w(TAG, "No cars available in the area");
+                    if (view != null) {
+                        view.showDirectionApiFailedError("No cars available in your area. Please try again later.");
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Log.e(TAG, "Error finding car", e);
+                    if (view != null) {
+                        view.showDirectionApiFailedError("Error finding available car: " + e.getMessage());
+                    }
+                }
+            });
+    }
+
+    private void startSimulationWithAssignedCar(LatLng carLocation, LatLng pickUpLatLng, LatLng dropLatLng) {
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("type", "requestCab");
@@ -58,6 +126,10 @@ public class MapsPresenter implements WebSocketListener {
             jsonObject.put("pickUpLng", pickUpLatLng.longitude);
             jsonObject.put("dropLat", dropLatLng.latitude);
             jsonObject.put("dropLng", dropLatLng.longitude);
+            jsonObject.put("carLat", carLocation.latitude);
+            jsonObject.put("carLng", carLocation.longitude);
+            jsonObject.put("assignedCarId", assignedCarId);
+            
             webSocket.sendMessage(jsonObject.toString());
         } catch (JSONException e) {
             Log.e(TAG, "Error creating JSON for cab request", e);
@@ -138,6 +210,17 @@ public class MapsPresenter implements WebSocketListener {
                 case Constants.TRIP_END:
                     if (view != null) {
                         view.informTripEnd();
+                    }
+                    // Release the car after trip ends
+                    if (assignedCarId != null) {
+                        // Get final location from the last location update
+                        double finalLat = jsonObject.optDouble("finalLat", 0);
+                        double finalLng = jsonObject.optDouble("finalLng", 0);
+                        
+                        if (finalLat != 0 && finalLng != 0) {
+                            CarManager.releaseCarAfterTrip(assignedCarId, finalLat, finalLng);
+                        }
+                        assignedCarId = null;
                     }
                     break;
 
