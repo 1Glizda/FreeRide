@@ -63,10 +63,6 @@ dependencies {
 
     // H3 Geospatial Library
     implementation 'com.uber:h3:4.1.1'
-    
-    // MongoDB Driver
-    implementation 'org.mongodb:mongodb-driver-sync:4.11.1'
-    implementation 'org.mongodb:bson:4.11.1'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

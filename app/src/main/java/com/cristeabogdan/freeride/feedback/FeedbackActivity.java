@@ -9,22 +9,19 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.cristeabogdan.freeride.databinding.ActivityFeedbackBinding;
+import com.cristeabogdan.freeride.database.RideManager;
 import com.cristeabogdan.freeride.maps.MapsActivity;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.DecimalFormat;
-import java.util.HashMap;
-import java.util.Map;
 
 public class FeedbackActivity extends AppCompatActivity {
 
     private static final String TAG = "FeedbackActivity";
     private ActivityFeedbackBinding binding;
-    private FirebaseFirestore db;
     private double tripAmount;
     private String tripDistance;
     private String tripDuration;
+    private String rideId;
     private int selectedRating = 0;
 
     @Override
@@ -33,13 +30,12 @@ public class FeedbackActivity extends AppCompatActivity {
         binding = ActivityFeedbackBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        db = FirebaseFirestore.getInstance();
-
         // Get trip data from intent
         Intent intent = getIntent();
         tripAmount = intent.getDoubleExtra("trip_amount", 0.0);
         tripDistance = intent.getStringExtra("trip_distance");
         tripDuration = intent.getStringExtra("trip_duration");
+        rideId = intent.getStringExtra("ride_id");
 
         setupUI();
         setUpClickListeners();
@@ -91,44 +87,37 @@ public class FeedbackActivity extends AppCompatActivity {
             return;
         }
 
+        if (rideId == null) {
+            Toast.makeText(this, "No ride ID found", Toast.LENGTH_SHORT).show();
+            navigateToMaps();
+            return;
+        }
+
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.submitButton.setEnabled(false);
 
         // Save feedback to Firestore
-        saveFeedbackToFirestore(selectedRating, comment);
-    }
+        RideManager.saveFeedback(rideId, selectedRating, comment, new RideManager.RideUpdateCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "Feedback saved successfully");
+                binding.progressBar.setVisibility(View.GONE);
+                binding.submitButton.setEnabled(true);
 
-    private void saveFeedbackToFirestore(int rating, String comment) {
-        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
-                FirebaseAuth.getInstance().getCurrentUser().getUid() : "anonymous";
+                Toast.makeText(FeedbackActivity.this, "Thank you for your feedback!", Toast.LENGTH_SHORT).show();
+                navigateToMaps();
+            }
 
-        Map<String, Object> feedback = new HashMap<>();
-        feedback.put("userId", userId);
-        feedback.put("rating", rating);
-        feedback.put("comment", comment);
-        feedback.put("tripAmount", tripAmount);
-        feedback.put("tripDistance", tripDistance);
-        feedback.put("tripDuration", tripDuration);
-        feedback.put("timestamp", System.currentTimeMillis());
+            @Override
+            public void onFailure(Exception e) {
+                Log.w(TAG, "Error saving feedback", e);
+                binding.progressBar.setVisibility(View.GONE);
+                binding.submitButton.setEnabled(true);
 
-        db.collection("feedback")
-                .add(feedback)
-                .addOnSuccessListener(documentReference -> {
-                    Log.d(TAG, "Feedback saved with ID: " + documentReference.getId());
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.submitButton.setEnabled(true);
-
-                    Toast.makeText(this, "Thank you for your feedback!", Toast.LENGTH_SHORT).show();
-                    navigateToMaps();
-                })
-                .addOnFailureListener(e -> {
-                    Log.w(TAG, "Error adding feedback", e);
-                    binding.progressBar.setVisibility(View.GONE);
-                    binding.submitButton.setEnabled(true);
-
-                    Toast.makeText(this, "Failed to submit feedback. Please try again.",
-                            Toast.LENGTH_SHORT).show();
-                });
+                Toast.makeText(FeedbackActivity.this, "Failed to submit feedback. Please try again.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void navigateToMaps() {

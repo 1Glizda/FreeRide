@@ -5,16 +5,19 @@ import com.google.android.gms.maps.model.LatLng;
 import com.cristeabogdan.freeride.network.NetworkService;
 import com.cristeabogdan.freeride.h3.CarManager;
 import com.cristeabogdan.freeride.database.Car;
-import com.cristeabogdan.freeride.database.MongoDBManager;
+import com.cristeabogdan.freeride.database.FirebaseCarManager;
+import com.cristeabogdan.freeride.database.RideManager;
 import com.cristeabogdan.simulator.WebSocket;
 import com.cristeabogdan.simulator.WebSocketListener;
 import com.cristeabogdan.freeride.utils.Constants;
+import com.google.firebase.auth.FirebaseAuth;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MapsPresenter implements WebSocketListener {
 
@@ -24,6 +27,7 @@ public class MapsPresenter implements WebSocketListener {
     private MapsView view;
     private WebSocket webSocket;
     private String assignedCarId;
+    private String currentRideId;
 
     public MapsPresenter(NetworkService networkService) {
         this.networkService = networkService;
@@ -61,7 +65,7 @@ public class MapsPresenter implements WebSocketListener {
     }
 
     private void showAvailableCars() {
-        CarManager.getAllAvailableCars(new MongoDBManager.CarQueryCallback() {
+        CarManager.getAllAvailableCars(new FirebaseCarManager.CarQueryCallback() {
             @Override
             public void onSuccess(List<Car> cars) {
                 List<LatLng> carLocations = new ArrayList<>();
@@ -82,6 +86,32 @@ public class MapsPresenter implements WebSocketListener {
     }
 
     public void requestCab(LatLng pickUpLatLng, LatLng dropLatLng) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser() != null ?
+                FirebaseAuth.getInstance().getCurrentUser().getUid() : "anonymous";
+
+        // Create ride record first
+        RideManager.createRide(userId, null, pickUpLatLng.latitude, pickUpLatLng.longitude,
+                dropLatLng.latitude, dropLatLng.longitude, new RideManager.RideCallback() {
+                    @Override
+                    public void onSuccess(String rideId) {
+                        currentRideId = rideId;
+                        Log.d(TAG, "Ride created with ID: " + rideId);
+                        
+                        // Now find and assign a car
+                        findAndAssignCar(pickUpLatLng, dropLatLng);
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e(TAG, "Failed to create ride", e);
+                        if (view != null) {
+                            view.showDirectionApiFailedError("Failed to create ride: " + e.getMessage());
+                        }
+                    }
+                });
+    }
+
+    private void findAndAssignCar(LatLng pickUpLatLng, LatLng dropLatLng) {
         // Use H3 algorithm to find nearest available car
         CarManager.findNearestAvailableCar(pickUpLatLng.latitude, pickUpLatLng.longitude,
             new CarManager.CarMatchingCallback() {
@@ -89,6 +119,11 @@ public class MapsPresenter implements WebSocketListener {
                 public void onCarMatched(Car car) {
                     Log.d(TAG, "Car matched: " + car.getCarId() + " - " + car.getDriverName());
                     assignedCarId = car.getCarId();
+                    
+                    // Update ride with assigned car
+                    if (currentRideId != null) {
+                        RideManager.updateRideStatus(currentRideId, "DRIVER_ASSIGNED", null);
+                    }
                     
                     // Inform view that cab is booked
                     if (view != null) {
@@ -129,6 +164,7 @@ public class MapsPresenter implements WebSocketListener {
             jsonObject.put("carLat", carLocation.latitude);
             jsonObject.put("carLng", carLocation.longitude);
             jsonObject.put("assignedCarId", assignedCarId);
+            jsonObject.put("rideId", currentRideId);
             
             webSocket.sendMessage(jsonObject.toString());
         } catch (JSONException e) {
@@ -190,38 +226,34 @@ public class MapsPresenter implements WebSocketListener {
                     break;
 
                 case Constants.CAB_IS_ARRIVING:
+                    if (currentRideId != null) {
+                        RideManager.updateRideStatus(currentRideId, "DRIVER_ARRIVING", null);
+                    }
                     if (view != null) {
                         view.informCabIsArriving();
                     }
                     break;
 
                 case Constants.CAB_ARRIVED:
+                    if (currentRideId != null) {
+                        RideManager.updateRideStatus(currentRideId, "DRIVER_ARRIVED", null);
+                    }
                     if (view != null) {
                         view.informCabArrived();
                     }
                     break;
 
                 case Constants.TRIP_START:
+                    if (currentRideId != null) {
+                        RideManager.updateRideStatus(currentRideId, "TRIP_STARTED", null);
+                    }
                     if (view != null) {
                         view.informTripStart();
                     }
                     break;
 
                 case Constants.TRIP_END:
-                    if (view != null) {
-                        view.informTripEnd();
-                    }
-                    // Release the car after trip ends
-                    if (assignedCarId != null) {
-                        // Get final location from the last location update
-                        double finalLat = jsonObject.optDouble("finalLat", 0);
-                        double finalLng = jsonObject.optDouble("finalLng", 0);
-                        
-                        if (finalLat != 0 && finalLng != 0) {
-                            CarManager.releaseCarAfterTrip(assignedCarId, finalLat, finalLng);
-                        }
-                        assignedCarId = null;
-                    }
+                    handleTripEnd(jsonObject);
                     break;
 
                 default:
@@ -231,6 +263,53 @@ public class MapsPresenter implements WebSocketListener {
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing message data", e);
         }
+    }
+
+    private void handleTripEnd(JSONObject jsonObject) {
+        // Generate trip data
+        Random random = new Random();
+        double tripAmount = 10.50 + (random.nextDouble() * 20); // $10.50 - $30.50
+        String tripDistance = String.format("%.1f km", 2.0 + (random.nextDouble() * 8)); // 2-10 km
+        String tripDuration = String.format("%d min", 15 + random.nextInt(25)); // 15-40 min
+
+        // Complete the ride
+        if (currentRideId != null) {
+            RideManager.completeRide(currentRideId, tripAmount, tripDistance, tripDuration, 
+                new RideManager.RideUpdateCallback() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d(TAG, "Ride completed successfully");
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e(TAG, "Failed to complete ride", e);
+                    }
+                });
+        }
+
+        // Release the car after trip ends
+        if (assignedCarId != null) {
+            try {
+                double finalLat = jsonObject.optDouble("finalLat", 0);
+                double finalLng = jsonObject.optDouble("finalLng", 0);
+                
+                if (finalLat != 0 && finalLng != 0) {
+                    CarManager.releaseCarAfterTrip(assignedCarId, finalLat, finalLng);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing car", e);
+            }
+            
+            assignedCarId = null;
+        }
+
+        if (view != null) {
+            view.informTripEnd();
+        }
+
+        // Reset ride ID for next trip
+        currentRideId = null;
     }
 
     private void handlePathMessage(JSONObject jsonObject) {
@@ -301,5 +380,9 @@ public class MapsPresenter implements WebSocketListener {
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing error data", e);
         }
+    }
+
+    public String getCurrentRideId() {
+        return currentRideId;
     }
 }

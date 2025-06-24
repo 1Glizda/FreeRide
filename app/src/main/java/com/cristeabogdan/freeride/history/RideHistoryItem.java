@@ -2,6 +2,7 @@ package com.cristeabogdan.freeride.history;
 
 public class RideHistoryItem {
     private String id;
+    private String carId;
     private Double amount;
     private String distance;
     private String duration;
@@ -16,6 +17,14 @@ public class RideHistoryItem {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getCarId() {
+        return carId;
+    }
+
+    public void setCarId(String carId) {
+        this.carId = carId;
     }
 
     public Double getAmount() {

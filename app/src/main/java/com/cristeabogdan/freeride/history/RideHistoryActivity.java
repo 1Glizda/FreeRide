@@ -9,20 +9,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.cristeabogdan.freeride.databinding.ActivityRideHistoryBinding;
+import com.cristeabogdan.freeride.database.Ride;
+import com.cristeabogdan.freeride.database.RideManager;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class RideHistoryActivity extends AppCompatActivity {
 
     private static final String TAG = "RideHistoryActivity";
     private ActivityRideHistoryBinding binding;
-    private FirebaseFirestore db;
     private RideHistoryAdapter adapter;
     private List<RideHistoryItem> rideHistoryList;
 
@@ -32,7 +29,6 @@ public class RideHistoryActivity extends AppCompatActivity {
         binding = ActivityRideHistoryBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        db = FirebaseFirestore.getInstance();
         rideHistoryList = new ArrayList<>();
 
         setupRecyclerView();
@@ -61,43 +57,46 @@ public class RideHistoryActivity extends AppCompatActivity {
 
         binding.progressBar.setVisibility(View.VISIBLE);
 
-        // Load feedback data as ride history (since we don't have a separate rides collection)
-        db.collection("feedback")
-                .whereEqualTo("userId", userId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    binding.progressBar.setVisibility(View.GONE);
-                    rideHistoryList.clear();
+        RideManager.getUserRides(userId, new RideManager.RideQueryCallback() {
+            @Override
+            public void onSuccess(List<Ride> rides) {
+                binding.progressBar.setVisibility(View.GONE);
+                rideHistoryList.clear();
 
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Map<String, Object> data = document.getData();
-                        
+                for (Ride ride : rides) {
+                    // Only show completed rides
+                    if ("TRIP_COMPLETED".equals(ride.getStatus())) {
                         RideHistoryItem item = new RideHistoryItem();
-                        item.setId(document.getId());
-                        item.setAmount((Double) data.get("tripAmount"));
-                        item.setDistance((String) data.get("tripDistance"));
-                        item.setDuration((String) data.get("tripDuration"));
-                        item.setRating((Long) data.get("rating"));
-                        item.setTimestamp((Long) data.get("timestamp"));
+                        item.setId(ride.getId());
+                        item.setCarId(ride.getCarId());
+                        item.setAmount(ride.getAmount());
+                        item.setDistance(ride.getDistance());
+                        item.setDuration(ride.getDuration());
+                        item.setRating(ride.getRating());
+                        item.setTimestamp(ride.getTripCompletedAt() != null ? 
+                            ride.getTripCompletedAt() : ride.getCreatedAt());
                         
                         rideHistoryList.add(item);
                     }
+                }
 
-                    if (rideHistoryList.isEmpty()) {
-                        showEmptyState();
-                    } else {
-                        binding.emptyStateLayout.setVisibility(View.GONE);
-                        binding.recyclerView.setVisibility(View.VISIBLE);
-                        adapter.notifyDataSetChanged();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    binding.progressBar.setVisibility(View.GONE);
-                    Log.e(TAG, "Error loading ride history", e);
-                    Toast.makeText(this, "Failed to load ride history", Toast.LENGTH_SHORT).show();
+                if (rideHistoryList.isEmpty()) {
                     showEmptyState();
-                });
+                } else {
+                    binding.emptyStateLayout.setVisibility(View.GONE);
+                    binding.recyclerView.setVisibility(View.VISIBLE);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                binding.progressBar.setVisibility(View.GONE);
+                Log.e(TAG, "Error loading ride history", e);
+                Toast.makeText(RideHistoryActivity.this, "Failed to load ride history", Toast.LENGTH_SHORT).show();
+                showEmptyState();
+            }
+        });
     }
 
     private void showEmptyState() {

@@ -42,10 +42,11 @@ public class RideHistoryAdapter extends RecyclerView.Adapter<RideHistoryAdapter.
         String amount = item.getAmount() != null ? "$" + decimalFormat.format(item.getAmount()) : "$0.00";
         holder.amountTextView.setText(amount);
 
-        // Set trip details
-        String tripDetails = String.format("%s • %s", 
+        // Set trip details with car ID
+        String tripDetails = String.format("%s • %s • %s", 
             item.getDistance() != null ? item.getDistance() : "0 km",
-            item.getDuration() != null ? item.getDuration() : "0 min");
+            item.getDuration() != null ? item.getDuration() : "0 min",
+            item.getCarId() != null ? item.getCarId() : "Unknown Car");
         holder.tripDetailsTextView.setText(tripDetails);
 
         // Format date

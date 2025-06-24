@@ -27,6 +27,7 @@ public class PaymentActivity extends AppCompatActivity {
     private double tripAmount;
     private String tripDistance;
     private String tripDuration;
+    private String rideId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +39,10 @@ public class PaymentActivity extends AppCompatActivity {
         PaymentConfiguration.init(getApplicationContext(), STRIPE_PUBLISHABLE_KEY);
         paymentSheet = new PaymentSheet(this, this::onPaymentSheetResult);
 
-        // Get trip data from intent (normally from backend)
+        // Get trip data from intent
+        Intent intent = getIntent();
+        rideId = intent.getStringExtra("ride_id");
+        
         generateTripData();
         setupUI();
         setUpClickListeners();
@@ -111,6 +115,7 @@ public class PaymentActivity extends AppCompatActivity {
         intent.putExtra("trip_amount", tripAmount);
         intent.putExtra("trip_distance", tripDistance);
         intent.putExtra("trip_duration", tripDuration);
+        intent.putExtra("ride_id", rideId);
         startActivity(intent);
         finish();
     }
@@ -126,6 +131,7 @@ public class PaymentActivity extends AppCompatActivity {
             intent.putExtra("trip_amount", tripAmount);
             intent.putExtra("trip_distance", tripDistance);
             intent.putExtra("trip_duration", tripDuration);
+            intent.putExtra("ride_id", rideId);
             startActivity(intent);
             finish();
         } else if (paymentSheetResult instanceof PaymentSheetResult.Canceled) {
