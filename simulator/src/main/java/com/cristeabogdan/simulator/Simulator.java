@@ -27,6 +27,8 @@ public class Simulator {
     private static LatLng currentLocation;
     private static LatLng pickUpLocation;
     private static LatLng dropLocation;
+    private static LatLng assignedCarLocation;
+    private static String assignedCarId;
     private static ArrayList<LatLng> nearbyCabLocations = new ArrayList<>();
     private static ArrayList<LatLng> pickUpPath = new ArrayList<>();
     private static ArrayList<LatLng> tripPath = new ArrayList<>();
@@ -80,31 +82,18 @@ public class Simulator {
     public static void requestCab(
             LatLng pickUpLocation,
             LatLng dropLocation,
+            LatLng carLocation,
+            String carId,
             WebSocketListener webSocketListener
     ) {
         Simulator.pickUpLocation = pickUpLocation;
         Simulator.dropLocation = dropLocation;
+        Simulator.assignedCarLocation = carLocation;
+        Simulator.assignedCarId = carId;
 
-        int randomOperatorForLat = random.nextInt(2);
-        int randomOperatorForLng = random.nextInt(2);
-
-        double randomDeltaForLat = (random.nextInt(26) + 5) / 10000.00; // (5..30).random()
-        double randomDeltaForLng = (random.nextInt(26) + 5) / 10000.00;
-
-        if (randomOperatorForLat == 1) {
-            randomDeltaForLat *= -1;
-        }
-        if (randomOperatorForLng == 1) {
-            randomDeltaForLng *= -1;
-        }
-
-        double latFakeNearby = Math.min(pickUpLocation.lat + randomDeltaForLat, 90.00);
-        double lngFakeNearby = Math.min(pickUpLocation.lng + randomDeltaForLng, 180.00);
-
-        LatLng bookedCabCurrentLocation = new LatLng(latFakeNearby, lngFakeNearby);
         DirectionsApiRequest directionsApiRequest = new DirectionsApiRequest(geoApiContext);
         directionsApiRequest.mode(TravelMode.DRIVING);
-        directionsApiRequest.origin(bookedCabCurrentLocation);
+        directionsApiRequest.origin(assignedCarLocation);
         directionsApiRequest.destination(Simulator.pickUpLocation);
         directionsApiRequest.setCallback(new PendingResult.Callback<DirectionsResult>() {
             @Override
@@ -113,6 +102,7 @@ public class Simulator {
                 try {
                     JSONObject jsonObjectCabBooked = new JSONObject();
                     jsonObjectCabBooked.put("type", "cabBooked");
+                    jsonObjectCabBooked.put("assignedCarId", assignedCarId);
                     mainThread.post(() -> webSocketListener.onMessage(jsonObjectCabBooked.toString()));
 
                     pickUpPath.clear();
@@ -176,12 +166,14 @@ public class Simulator {
                     jsonObject.put("type", "location");
                     jsonObject.put("lat", pickUpPath.get(index[0]).lat);
                     jsonObject.put("lng", pickUpPath.get(index[0]).lng);
+                    jsonObject.put("assignedCarId", assignedCarId);
                     mainThread.post(() -> webSocketListener.onMessage(jsonObject.toString()));
 
                     if (index[0] == size - 1) {
                         stopTimer();
                         JSONObject jsonObjectCabIsArriving = new JSONObject();
                         jsonObjectCabIsArriving.put("type", "cabIsArriving");
+                        jsonObjectCabIsArriving.put("assignedCarId", assignedCarId);
                         mainThread.post(() -> webSocketListener.onMessage(jsonObjectCabIsArriving.toString()));
                         startTimerForWaitDuringPickUp(webSocketListener);
                     }
@@ -207,6 +199,7 @@ public class Simulator {
                 try {
                     JSONObject jsonObjectCabArrived = new JSONObject();
                     jsonObjectCabArrived.put("type", "cabArrived");
+                    jsonObjectCabArrived.put("assignedCarId", assignedCarId);
                     mainThread.post(() -> webSocketListener.onMessage(jsonObjectCabArrived.toString()));
 
                     DirectionsApiRequest directionsApiRequest = new DirectionsApiRequest(geoApiContext);
@@ -271,6 +264,7 @@ public class Simulator {
                     if (index[0] == 0) {
                         JSONObject jsonObjectTripStart = new JSONObject();
                         jsonObjectTripStart.put("type", "tripStart");
+                        jsonObjectTripStart.put("assignedCarId", assignedCarId);
                         mainThread.post(() -> webSocketListener.onMessage(jsonObjectTripStart.toString()));
 
                         JSONObject jsonObject = new JSONObject();
@@ -283,6 +277,7 @@ public class Simulator {
                             jsonArray.put(jsonObjectLatLng);
                         }
                         jsonObject.put("path", jsonArray);
+                        jsonObject.put("assignedCarId", assignedCarId);
                         mainThread.post(() -> webSocketListener.onMessage(jsonObject.toString()));
                     }
 
@@ -290,6 +285,7 @@ public class Simulator {
                     jsonObject.put("type", "location");
                     jsonObject.put("lat", tripPath.get(index[0]).lat);
                     jsonObject.put("lng", tripPath.get(index[0]).lng);
+                    jsonObject.put("assignedCarId", assignedCarId);
                     mainThread.post(() -> webSocketListener.onMessage(jsonObject.toString()));
 
                     if (index[0] == size - 1) {
@@ -317,6 +313,15 @@ public class Simulator {
                 try {
                     JSONObject jsonObjectTripEnd = new JSONObject();
                     jsonObjectTripEnd.put("type", "tripEnd");
+                    jsonObjectTripEnd.put("assignedCarId", assignedCarId);
+                    
+                    // Include final location for car release
+                    if (!tripPath.isEmpty()) {
+                        LatLng finalLocation = tripPath.get(tripPath.size() - 1);
+                        jsonObjectTripEnd.put("finalLat", finalLocation.lat);
+                        jsonObjectTripEnd.put("finalLng", finalLocation.lng);
+                    }
+                    
                     mainThread.post(() -> webSocketListener.onMessage(jsonObjectTripEnd.toString()));
                 } catch (Exception e) {
                     Log.e(TAG, "Error in trip end timer", e);
