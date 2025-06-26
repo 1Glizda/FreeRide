@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Fleet Admin</string>
+    <string name="fleet_management">Fleet Management</string>
+    <string name="total_cars">Total Cars</string>
+    <string name="available_cars">Available</string>
+    <string name="in_use_cars">In Use</string>
+    <string name="maintenance_cars">Maintenance</string>
+    <string name="car_details">Car Details</string>
+    <string name="schedule_maintenance">Schedule Maintenance</string>
+    <string name="complete_maintenance">Complete Maintenance</string>
+    <string name="maintenance_notes">Maintenance Notes</string>
+    <string name="no_cars_found">No cars found</string>
+    <string name="fleet_data_will_appear_here">Fleet data will appear here</string>
+    <string name="failed_to_load_fleet_data">Failed to load fleet data</string>
+    <string name="maintenance_scheduled">Maintenance scheduled</string>
+    <string name="maintenance_completed">Maintenance completed</string>
+    <string name="failed_to_schedule_maintenance">Failed to schedule maintenance</string>
+    <string name="failed_to_complete_maintenance">Failed to complete maintenance</string>
+</resources>
