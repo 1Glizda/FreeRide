@@ -16,18 +16,163 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Menu Button -->
+
+    <!-- Expandable Menu -->
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/menuButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="44dp"
+        android:layout_marginEnd="344dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?android:attr/selectableItemBackground"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:contentDescription="Menu"
+            android:src="@drawable/ic_menu" />
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/expandableMenu"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:visibility="gone"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/menuButton">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <!-- Ride History -->
+            <LinearLayout
+                android:id="@+id/rideHistoryItem"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/menu_item_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_history"
+                    android:contentDescription="Ride History" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="Ride History"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <!-- Account Details -->
+            <LinearLayout
+                android:id="@+id/accountDetailsItem"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/menu_item_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_account"
+                    android:contentDescription="Account Details" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="Account Details"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/light_grey" />
+
+            <!-- Logout -->
+            <LinearLayout
+                android:id="@+id/logoutItem"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/menu_item_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_logout"
+                    android:contentDescription="Logout" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="Logout"
+                    android:textColor="@android:color/black"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/pickUpDropLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
         android:layout_marginTop="108dp"
-        android:layout_marginEnd="12dp"
         android:background="@android:color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/pickUpIndicator"

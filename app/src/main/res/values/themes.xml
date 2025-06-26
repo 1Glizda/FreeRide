@@ -5,13 +5,25 @@
 
     </style>
 
+    <style name="Theme.FreeRide" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <!-- …any other color items… -->
+    </style>
+
+    <style name="Theme.FreeRide.NoActionBar" parent="Theme.FreeRide">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
     <style name="MapsTheme" parent="AppTheme.Base">
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
     <style name="AppTheme.Base" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="windowNoTitle">true</item>
+        <item name="windowNoTitle">false</item>
         <item name="windowActionBar">false</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>

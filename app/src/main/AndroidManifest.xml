@@ -15,20 +15,31 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.FreeRide"
+        android:theme="@style/Theme.FreeRide.NoActionBar"
         tools:targetApi="31">
 
-        <!-- Main Activity (Maps) -->
+        <!-- MapsActivity: catches payment‐success deep link -->
         <activity
             android:name=".maps.MapsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.FreeRide" />
+            android:exported="true"
+            android:theme="@style/Theme.FreeRide.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <!-- match URI: freeride://payment/success -->
+                <data
+                    android:scheme="freeride"
+                    android:host="payment"
+                    android:path="/success"/>
+            </intent-filter>
+        </activity>
 
-        <!-- Login Activity -->
+        <!-- Login Activity (launcher) -->
         <activity
             android:name=".auth.LoginActivity"
             android:exported="true"
-            android:theme="@style/Theme.FreeRide">
+            android:theme="@style/Theme.FreeRide.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -39,19 +50,30 @@
         <activity
             android:name=".payment.PaymentActivity"
             android:exported="false"
-            android:theme="@style/Theme.FreeRide" />
+            android:theme="@style/Theme.FreeRide.NoActionBar" />
 
         <!-- Feedback Activity -->
         <activity
             android:name=".feedback.FeedbackActivity"
-            android:exported="false"
-            android:theme="@style/Theme.FreeRide" />
+            android:exported="true"
+            android:theme="@style/Theme.FreeRide.NoActionBar" />
 
-        <!-- Google Maps API Key (if using maps) -->
+        <!-- Account Activity -->
+        <activity
+            android:name=".account.AccountActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FreeRide.NoActionBar" />
+
+        <!-- Ride History Activity -->
+        <activity
+            android:name=".history.RideHistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FreeRide.NoActionBar" />
+
+        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
     </application>
-
 </manifest>

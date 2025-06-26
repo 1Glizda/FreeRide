@@ -2,24 +2,40 @@ package com.cristeabogdan.freeride.maps;
 
 import android.animation.ValueAnimator;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.cristeabogdan.freeride.R;
+import com.cristeabogdan.freeride.account.AccountActivity;
+import com.cristeabogdan.freeride.auth.LoginActivity;
+import com.cristeabogdan.freeride.database.Car;
 import com.cristeabogdan.freeride.databinding.ActivityMapsBinding;
+import com.cristeabogdan.freeride.feedback.FeedbackActivity;
+import com.cristeabogdan.freeride.h3.CarManager;
+import com.cristeabogdan.freeride.history.RideHistoryActivity;
 import com.cristeabogdan.freeride.network.NetworkService;
+import com.cristeabogdan.freeride.payment.PaymentActivity;
 import com.cristeabogdan.freeride.utils.AnimationUtils;
 import com.cristeabogdan.freeride.utils.MapUtils;
 import com.cristeabogdan.freeride.utils.PermissionUtils;
 import com.cristeabogdan.freeride.utils.ViewUtils;
+import com.cristeabogdan.simulator.Simulator;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -42,10 +58,16 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class MapsActivity extends AppCompatActivity implements MapsView, OnMapReadyCallback {
 
@@ -53,6 +75,9 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 999;
     private static final int PICKUP_REQUEST_CODE = 1;
     private static final int DROP_REQUEST_CODE = 2;
+    private static final int PAYMENT_REQUEST_CODE = 3;
+    private static final int FEEDBACK_REQUEST_CODE = 4;
+
 
     private ActivityMapsBinding binding;
     private MapsPresenter presenter;
@@ -70,6 +95,10 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     private LatLng previousLatLngFromServer;
     private LatLng currentLatLngFromServer;
     private Marker movingCabMarker;
+    private boolean isMenuExpanded = false;
+
+    private ActivityResultLauncher<Intent> paymentLauncher;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,8 +113,65 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
         }
         presenter = new MapsPresenter(new NetworkService());
         presenter.onAttach(this);
+        paymentLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() != RESULT_OK) {
+                        Toast.makeText(this, "Payment cancelled", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
         setUpClickListener();
+        handleDeepLink(getIntent());
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleDeepLink(intent);
+    }
+
+    private void handleDeepLink(Intent intent) {
+        Uri data = intent.getData();
+        if (data != null
+                && "freeride".equals(data.getScheme())
+                && "payment".equals(data.getHost())
+                && "/success".equals(data.getPath())) {
+
+            // retrieve saved coords & fare
+            SharedPreferences prefs = getSharedPreferences("RidePrefs", MODE_PRIVATE);
+            LatLng pickUp = new LatLng(
+                    prefs.getFloat("pickup_lat", 0f),
+                    prefs.getFloat("pickup_lng", 0f)
+            );
+            LatLng drop = new LatLng(
+                    prefs.getFloat("drop_lat", 0f),
+                    prefs.getFloat("drop_lng", 0f)
+            );
+            double fare = Double.longBitsToDouble(
+                    prefs.getLong("last_fare_bits", Double.doubleToLongBits(0.0))
+            );
+
+            // 1) Firestore: save payment
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            String paymentId = UUID.randomUUID().toString();
+            Map<String,Object> payment = new HashMap<>();
+            payment.put("paymentId", paymentId);
+            payment.put("rideId", MapsPresenter.RideId);
+            payment.put("fare", PaymentActivity.totalFare);
+            payment.put("timestamp", com.google.firebase.firestore.FieldValue.serverTimestamp());
+            FirebaseFirestore.getInstance()
+                    .collection("payment")
+                    .document(paymentId)
+                    .set(payment);
+            }, 10_000);
+
+            // 2) Now request the cab (will also save ride in presenter)
+            presenter.seedCarsIfNeeded(pickUp.latitude, pickUp.longitude);
+            presenter.requestCab(pickUp, drop);
+        }
+    }
+
 
     private void setUpClickListener() {
         binding.pickUpTextView.setOnClickListener(v ->
@@ -98,12 +184,91 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
             binding.statusTextView.setVisibility(View.VISIBLE);
             binding.statusTextView.setText(getString(R.string.requesting_your_cab));
             binding.requestCabButton.setEnabled(false);
-            binding.pickUpTextView.setEnabled(false);
-            binding.dropTextView.setEnabled(false);
-            presenter.requestCab(pickUpLatLng, dropLatLng);
+
+            // Store the pickup/drop locations in SharedPreferences or ViewModel
+            SharedPreferences prefs = getSharedPreferences("RidePrefs", MODE_PRIVATE);
+            prefs.edit()
+                    .putFloat("pickup_lat", (float)pickUpLatLng.latitude)
+                    .putFloat("pickup_lng", (float)pickUpLatLng.longitude)
+                    .putFloat("drop_lat", (float)dropLatLng.latitude)
+                    .putFloat("drop_lng", (float)dropLatLng.longitude)
+                    .apply();
+
+            Intent paymentIntent = new Intent(this, PaymentActivity.class);
+            startActivityForResult(paymentIntent, PAYMENT_REQUEST_CODE);
         });
 
         binding.nextRideButton.setOnClickListener(v -> reset());
+
+        // Menu button click listener
+        binding.menuButton.setOnClickListener(v -> toggleMenu());
+
+        // Menu item click listeners
+        binding.rideHistoryItem.setOnClickListener(v -> {
+            Intent intent = new Intent(this, RideHistoryActivity.class);
+            startActivity(intent);
+            hideMenu();
+        });
+
+        binding.accountDetailsItem.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AccountActivity.class);
+            startActivity(intent);
+            hideMenu();
+        });
+
+        binding.logoutItem.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
+
+        // Hide menu when clicking outside
+        binding.getRoot().setOnClickListener(v -> {
+            if (isMenuExpanded) {
+                hideMenu();
+            }
+        });
+    }
+
+    private void toggleMenu() {
+        if (isMenuExpanded) {
+            hideMenu();
+        } else {
+            showMenu();
+        }
+    }
+
+    private void showMenu() {
+        isMenuExpanded = true;
+        binding.expandableMenu.setVisibility(View.VISIBLE);
+
+        // Animate menu appearance
+        binding.expandableMenu.setAlpha(0f);
+        binding.expandableMenu.setScaleX(0.8f);
+        binding.expandableMenu.setScaleY(0.8f);
+
+        binding.expandableMenu.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(200)
+                .setInterpolator(new AccelerateDecelerateInterpolator())
+                .start();
+    }
+
+    private void hideMenu() {
+        isMenuExpanded = false;
+
+        binding.expandableMenu.animate()
+                .alpha(0f)
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .setDuration(150)
+                .setInterpolator(new AccelerateDecelerateInterpolator())
+                .withEndAction(() -> binding.expandableMenu.setVisibility(View.GONE))
+                .start();
     }
 
     private void launchLocationAutoCompleteActivity(int requestCode) {
@@ -169,22 +334,30 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
-                if (currentLatLng == null) {
-                    if (locationResult.getLocations() != null) {
-                        for (android.location.Location location : locationResult.getLocations()) {
-                            if (currentLatLng == null) {
-                                currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                                setCurrentLocationAsPickUp();
-                                enableMyLocationOnMap();
-                                moveCamera(currentLatLng);
-                                animateCamera(currentLatLng);
-                                presenter.requestNearbyCabs(currentLatLng);
-                            }
-                        }
+                if (locationResult == null) return;
+
+                for (Location location : locationResult.getLocations()) {
+                    if (currentLatLng == null) {
+                        currentLatLng = new LatLng(
+                                location.getLatitude(),
+                                location.getLongitude()
+                        );
+                        setCurrentLocationAsPickUp();
+                        enableMyLocationOnMap();
+                        moveCamera(currentLatLng);
+                        animateCamera(currentLatLng);
+
+                        // seed once; when that completes, presenter.loadAvailableCars() will run
+                        presenter.seedCarsIfNeeded(
+                                currentLatLng.latitude,
+                                currentLatLng.longitude
+                        );
+                        // ← remove this next line entirely:
+                        // presenter.requestNearbyCabs(currentLatLng.latitude, currentLatLng.longitude);
+
+                        break; // we only need the first fix
                     }
                 }
-                // Few more things we can do here:
-                // For example: Update the location of user on server
             }
         };
 
@@ -222,7 +395,7 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
             moveCamera(currentLatLng);
             animateCamera(currentLatLng);
             setCurrentLocationAsPickUp();
-            presenter.requestNearbyCabs(currentLatLng);
+            presenter.requestNearbyCabs(currentLatLng.latitude, currentLatLng.longitude);
         } else {
             binding.pickUpTextView.setText("");
         }
@@ -306,6 +479,8 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        // Handle place selection results
         if (requestCode == PICKUP_REQUEST_CODE || requestCode == DROP_REQUEST_CODE) {
             switch (resultCode) {
                 case RESULT_OK:
@@ -330,6 +505,37 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
                 case RESULT_CANCELED:
                     Log.d(TAG, "Place Selection Canceled");
                     break;
+            }
+        }
+        // Handle payment result
+        else if (requestCode == PAYMENT_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                // Payment was successful - proceed with cab request
+                binding.statusTextView.setVisibility(View.VISIBLE);
+                binding.statusTextView.setText(getString(R.string.requesting_your_cab));
+                binding.requestCabButton.setEnabled(false);
+                binding.pickUpTextView.setEnabled(false);
+                binding.dropTextView.setEnabled(false);
+
+                // Get saved locations from SharedPreferences
+                SharedPreferences prefs = getSharedPreferences("RidePrefs", MODE_PRIVATE);
+                LatLng savedPickup = new LatLng(
+                        prefs.getFloat("pickup_lat", 0),
+                        prefs.getFloat("pickup_lng", 0)
+                );
+                Log.d(TAG, "savedPickup " + savedPickup);
+                LatLng savedDrop = new LatLng(
+                        prefs.getFloat("drop_lat", 0),
+                        prefs.getFloat("drop_lng", 0)
+                );
+                Log.d(TAG, "savedDrop " + savedDrop);
+
+                presenter.requestCab(savedPickup, savedDrop);
+            } else {
+                // Payment failed or was cancelled
+                binding.requestCabButton.setEnabled(true);
+                binding.statusTextView.setVisibility(View.GONE);
+                Toast.makeText(this, "Payment required to request a ride", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -358,6 +564,13 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
         nearbyCabMarkerList.clear();
         binding.requestCabButton.setVisibility(View.GONE);
         binding.statusTextView.setText(getString(R.string.your_cab_is_booked));
+        binding.statusTextView.setVisibility(View.VISIBLE);
+
+        binding.pickUpTextView.setVisibility(View.GONE);
+        binding.dropTextView.setVisibility(View.GONE);
+        binding.pickUpIndicator.setVisibility(View.GONE);
+        binding.dropIndicator.setVisibility(View.GONE);
+
     }
 
     @Override
@@ -468,7 +681,8 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
 
     @Override
     public void informTripStart() {
-        binding.statusTextView.setText(getString(R.string.you_are_on_a_trip));
+        binding.statusTextView.setText("Your are on a trip for " + PaymentActivity.KM
+                + " KM and " + PaymentActivity.MINUTES + " Minutes.");
         previousLatLngFromServer = null;
     }
 
@@ -476,6 +690,12 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     public void informTripEnd() {
         binding.statusTextView.setText(getString(R.string.trip_end));
         binding.nextRideButton.setVisibility(View.VISIBLE);
+        binding.nextRideButton.setVisibility(View.VISIBLE);
+
+        binding.pickUpTextView.setVisibility(View.VISIBLE);
+        binding.dropTextView.setVisibility(View.VISIBLE);
+        binding.pickUpIndicator.setVisibility(View.VISIBLE);
+        binding.dropIndicator.setVisibility(View.VISIBLE);
         if (greyPolyLine != null) {
             greyPolyLine.remove();
         }
@@ -488,6 +708,8 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
         if (destinationMarker != null) {
             destinationMarker.remove();
         }
+        Intent feedbackIntent = new Intent(this, FeedbackActivity.class);
+        startActivityForResult(feedbackIntent, FEEDBACK_REQUEST_CODE);
     }
 
     @Override
@@ -501,5 +723,14 @@ public class MapsActivity extends AppCompatActivity implements MapsView, OnMapRe
     public void showDirectionApiFailedError(String error) {
         Toast.makeText(this, error, Toast.LENGTH_LONG).show();
         reset();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isMenuExpanded) {
+            hideMenu();
+        } else {
+            super.onBackPressed();
+        }
     }
 }

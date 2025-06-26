@@ -1,19 +1,26 @@
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
 }
+apply plugin: 'com.google.gms.google-services'
+
+def localProps = new Properties()
+file("${rootDir}/local.properties").withInputStream { localProps.load(it) }
+def stripeKey = localProps.getProperty("STRIPE_SECRET_KEY") ?: ""
 
 android {
     namespace 'com.cristeabogdan.freeride'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.cristeabogdan.freeride"
         minSdk 26
-        targetSdk 34
+        //noinspection EditedTargetSdkVersion
+        targetSdk 35
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "STRIPE_SECRET_KEY", "\"${stripeKey}\""
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -24,6 +31,7 @@ android {
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -36,20 +44,42 @@ android {
 
 dependencies {
     implementation project(':simulator')
+
+    //Android
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'com.google.android.libraries.places:places:3.3.0'
-    implementation 'com.google.android.gms:play-services-maps:18.2.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+
+
+    //Google dependencies
+    implementation 'com.google.android.gms:play-services-maps:19.2.0'
+    implementation 'org.slf4j:slf4j-simple:1.7.36'
     implementation 'com.google.maps:google-maps-services:2.2.0'
-    implementation 'com.google.firebase:firebase-auth:23.2.1'
-    implementation 'com.google.firebase:firebase-firestore:25.1.4'
+    implementation 'com.google.android.gms:play-services-base:18.7.0'
+    implementation 'com.google.android.libraries.places:places:4.3.1'
+    implementation 'com.google.android.gms:play-services-basement:18.7.0'
+
+    //Firebase Database
     implementation platform('com.google.firebase:firebase-bom:33.15.0')
-    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-database'
+
+    //Firebase Auth
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'androidx.credentials:credentials:1.5.0'
+    implementation 'androidx.credentials:credentials-play-services-auth:1.5.0'
+    implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
+
+    //Stripe
     implementation 'com.stripe:stripe-android:20.32.0'
 
+    //Uber H3
+    implementation "com.uber:h3:3.4.1"
 
+
+    //Tests
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

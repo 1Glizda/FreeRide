@@ -3,9 +3,11 @@ package com.cristeabogdan.freeride;
 import android.app.Application;
 import android.util.Log;
 
-import com.google.android.libraries.places.api.Places;
-import com.google.maps.GeoApiContext;
+import com.cristeabogdan.freeride.database.FirestoreManager;
 import com.cristeabogdan.simulator.Simulator;
+import com.google.android.libraries.places.api.Places;
+import com.google.firebase.FirebaseApp;
+import com.google.maps.GeoApiContext;
 
 public class RideSharingApp extends Application {
     private static final String TAG = "RideSharingApp";
@@ -13,48 +15,34 @@ public class RideSharingApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
-        // Initialize Google services
+        System.loadLibrary("h3-java");
         initializeGoogleServices();
+        FirestoreManager.init();
     }
 
     private void initializeGoogleServices() {
         try {
-            // Get API key from resources
             String apiKey = getString(R.string.google_maps_key);
-
-            // Verify API key exists
             if (apiKey == null || apiKey.isEmpty()) {
-                throw new IllegalArgumentException("Google Maps API key is missing in strings.xml");
+                throw new IllegalArgumentException("Missing Google Maps API key");
             }
-
-            // Initialize Places SDK
             if (!Places.isInitialized()) {
                 Places.initialize(getApplicationContext(), apiKey);
-                Log.d(TAG, "Places SDK initialized successfully");
+                Log.d(TAG, "Places SDK initialized");
             }
-
-            // Initialize GeoApiContext for simulator
             Simulator.geoApiContext = new GeoApiContext.Builder()
                     .apiKey(apiKey)
                     .build();
-
         } catch (Exception e) {
-            Log.e(TAG, "Failed to initialize Google services", e);
-            // Consider showing a user-friendly error message or disabling map features
-            // You might want to track this error with Crashlytics or similar
+            Log.e(TAG, "Google services init failed", e);
         }
     }
 
     @Override
     public void onTerminate() {
-        // Clean up resources
         if (Simulator.geoApiContext != null) {
-            try {
-                Simulator.geoApiContext.shutdown();
-            } catch (Exception e) {
-                Log.e(TAG, "Error shutting down GeoApiContext", e);
-            }
+            try { Simulator.geoApiContext.shutdown(); }
+            catch (Exception e) { Log.e(TAG, "GeoApiContext shutdown failed", e); }
         }
         super.onTerminate();
     }

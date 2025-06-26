@@ -86,7 +86,7 @@
                         android:id="@+id/tripDistanceTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="5.2 km"
+                        android:text="5 km"
                         android:textColor="@android:color/black"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -195,7 +195,7 @@
                         android:id="@+id/distanceFareAmountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="$8.45"
+                        android:text="$8.5"
                         android:textColor="@android:color/black"
                         android:textSize="16sp" />
                 </LinearLayout>
@@ -205,24 +205,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Time Fare"
-                        android:textColor="@android:color/darker_gray"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/timeFareAmountTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="$2.82"
-                        android:textColor="@android:color/black"
-                        android:textSize="16sp" />
-                </LinearLayout>
+                    android:orientation="horizontal"/>
 
                 <!-- Service Fee -->
                 <LinearLayout
@@ -243,7 +226,7 @@
                         android:id="@+id/serviceFeeAmountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="$1.41"
+                        android:text="$1.00"
                         android:textColor="@android:color/black"
                         android:textSize="16sp" />
                 </LinearLayout>
@@ -253,24 +236,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Tax"
-                        android:textColor="@android:color/darker_gray"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/taxAmountTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="$1.41"
-                        android:textColor="@android:color/black"
-                        android:textSize="16sp" />
-                </LinearLayout>
+                    android:orientation="horizontal"/>
 
                 <View
                     android:layout_width="match_parent"
@@ -298,7 +264,7 @@
                         android:id="@+id/totalAmountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="$17.09"
+                        android:text="$12.09"
                         android:textColor="@android:color/black"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -309,12 +275,14 @@
         </androidx.cardview.widget.CardView>
 
         <!-- Amount Display -->
+
+        <!-- Pay Button -->
         <TextView
             android:id="@+id/tripAmountTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="$17.09"
+            android:layout_marginTop="48dp"
+            android:text="$12.09"
             android:textColor="@android:color/black"
             android:textSize="36sp"
             android:textStyle="bold"
@@ -322,18 +290,18 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/paymentBreakdownCard" />
 
-        <!-- Pay Button -->
         <Button
             android:id="@+id/payButton"
             android:layout_width="0dp"
             android:layout_height="56dp"
-            android:layout_marginTop="32dp"
-            android:background="@android:color/black"
+            android:layout_marginTop="24dp"
+            android:background="@android:color/white"
             android:text="Pay Now"
-            android:textColor="@android:color/white"
+            android:textColor="@android:color/black"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tripAmountTextView" />
 

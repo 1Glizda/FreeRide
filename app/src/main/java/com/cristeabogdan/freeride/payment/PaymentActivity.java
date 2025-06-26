@@ -1,32 +1,42 @@
 package com.cristeabogdan.freeride.payment;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.cristeabogdan.freeride.databinding.ActivityPaymentBinding;
-import com.cristeabogdan.freeride.feedback.FeedbackActivity;
-import com.stripe.android.PaymentConfiguration;
-import com.stripe.android.paymentsheet.PaymentSheet;
-import com.stripe.android.paymentsheet.PaymentSheetResult;
+import com.cristeabogdan.simulator.Simulator;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.maps.DirectionsApi;
+import com.google.maps.model.DirectionsLeg;
+import com.google.maps.model.DirectionsResult;
+import com.cristeabogdan.freeride.BuildConfig;
 
 import java.text.DecimalFormat;
-import java.util.Random;
+
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
+import org.json.JSONObject;
 
 public class PaymentActivity extends AppCompatActivity {
-
     private static final String TAG = "PaymentActivity";
-    private static final String STRIPE_PUBLISHABLE_KEY = "pk_test_51RcpxFJxNlsGSyYX3MSgdfJEwgK3Z4nMYkeRuqjtmMB4KUFQuM8Jl3kzAvjTqZ1JNMfDqN1bjFAfU3Q7VYuTPiaf00I5IUySuG";
+    private static final String STRIPE_SECRET_KEY = BuildConfig.STRIPE_SECRET_KEY;
+    private static final double PER_KM      = 0.30;
+    private static final double PER_MIN     = 1.00;
+    private static final double SERVICE_FEE = 1.09;
+    public static double totalFare, KM, MINUTES;
+
 
     private ActivityPaymentBinding binding;
-    private PaymentSheet paymentSheet;
-    private double tripAmount;
-    private String tripDistance;
-    private String tripDuration;
+    private String paymentLinkUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,107 +44,106 @@ public class PaymentActivity extends AppCompatActivity {
         binding = ActivityPaymentBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Initialize Stripe
-        PaymentConfiguration.init(getApplicationContext(), STRIPE_PUBLISHABLE_KEY);
-        paymentSheet = new PaymentSheet(this, this::onPaymentSheetResult);
-
-        // Get trip data from intent (normally from backend)
-        generateTripData();
-        setupUI();
-        setUpClickListeners();
-    }
-
-    private void generateTripData() {
-        // In a real app, this data would come from trip tracking
-        Random random = new Random();
-        tripAmount = 10.50 + (random.nextDouble() * 20); // $10.50 - $30.50
-        tripDistance = String.format("%.1f km", 2.0 + (random.nextDouble() * 8)); // 2-10 km
-        tripDuration = String.format("%d min", 15 + random.nextInt(25)); // 15-40 min
-    }
-
-    private void setupUI() {
-        DecimalFormat df = new DecimalFormat("#.##");
-
-        binding.tripAmountTextView.setText("$" + df.format(tripAmount));
-        binding.tripDistanceTextView.setText(tripDistance);
-        binding.tripDurationTextView.setText(tripDuration);
-
-        // Calculate breakdown
-        double baseFare = 3.00;
-        double distanceFare = tripAmount * 0.6;
-        double timeFare = tripAmount * 0.2;
-        double serviceFee = tripAmount * 0.1;
-        double tax = tripAmount * 0.1;
-
-        binding.baseFareAmountTextView.setText("$" + df.format(baseFare));
-        binding.distanceFareAmountTextView.setText("$" + df.format(distanceFare));
-        binding.timeFareAmountTextView.setText("$" + df.format(timeFare));
-        binding.serviceFeeAmountTextView.setText("$" + df.format(serviceFee));
-        binding.taxAmountTextView.setText("$" + df.format(tax));
-        binding.totalAmountTextView.setText("$" + df.format(tripAmount));
-    }
-
-    private void setUpClickListeners() {
-        binding.payButton.setOnClickListener(v -> processPayment());
-
-        binding.backButton.setOnClickListener(v -> {
-            // In a real app, you might want to handle this differently
-            Toast.makeText(this, "Payment is required to complete the trip", Toast.LENGTH_SHORT).show();
-        });
-    }
-
-    private void processPayment() {
-        binding.progressBar.setVisibility(View.VISIBLE);
         binding.payButton.setEnabled(false);
+        binding.payButton.setOnClickListener(v -> {
+            if (paymentLinkUrl != null) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(paymentLinkUrl)));
+            } else {
+                Toast.makeText(this, "Link not ready", Toast.LENGTH_SHORT).show();
+            }
+        });
 
-        // In a real implementation, you would:
-        // 1. Call your backend to create a payment intent
-        // 2. Pass the client secret to Stripe PaymentSheet
-        // For demo purposes, we'll simulate a successful payment
+        SharedPreferences prefs = getSharedPreferences("RidePrefs", MODE_PRIVATE);
+        LatLng pickUp = new LatLng(
+                prefs.getFloat("pickup_lat", 0f),
+                prefs.getFloat("pickup_lng", 0f)
+        );
+        LatLng drop = new LatLng(
+                prefs.getFloat("drop_lat", 0f),
+                prefs.getFloat("drop_lng", 0f)
+        );
 
-        // Simulate network delay
-        binding.getRoot().postDelayed(() -> {
-            // Simulate successful payment
-            simulateSuccessfulPayment();
-        }, 2000);
+        fetchComputeAndBuildLink(pickUp, drop);
     }
 
-    private void simulateSuccessfulPayment() {
-        binding.progressBar.setVisibility(View.GONE);
-        binding.payButton.setEnabled(true);
+    private void fetchComputeAndBuildLink(LatLng origin, LatLng dest) {
+        binding.progressBar.setVisibility(android.view.View.VISIBLE);
+        new Thread(() -> {
+            OkHttpClient client = new OkHttpClient();
+            try {
+                // 1) route info
+                DirectionsResult res = DirectionsApi.newRequest(Simulator.geoApiContext)
+                        .origin(origin.latitude + "," + origin.longitude)
+                        .destination(dest.latitude  + "," + dest.longitude)
+                        .await();
+                DirectionsLeg leg = res.routes[0].legs[0];
+                double km   = leg.distance.inMeters / 1000.0;
+                double mins = leg.duration.inSeconds / 60.0;
+                DecimalFormat kmFmt  = new DecimalFormat("0.###");   // up to 3 decimals, adjust as needed
+                DecimalFormat minFmt = new DecimalFormat("0");       // integer minute
+                KM = Double.parseDouble(kmFmt.format(km));
+                MINUTES = Double.parseDouble(minFmt.format(Math.min((long)mins, 9999)));  // cap at 4 digits if needed;
 
-        // Show success message
-        Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
+                // breakdown
+                double baseFare     = mins * PER_MIN;
+                double distanceFare = km   * PER_KM;
+                double serviceFee   = SERVICE_FEE;
+                double total        = Math.round((baseFare + distanceFare + serviceFee) * 100) / 100.0;
+                totalFare = total;
+                int amountCents     = (int)(total * 100);
 
-        // Navigate to feedback
-        Intent intent = new Intent(this, FeedbackActivity.class);
-        intent.putExtra("trip_amount", tripAmount);
-        intent.putExtra("trip_distance", tripDistance);
-        intent.putExtra("trip_duration", tripDuration);
-        startActivity(intent);
-        finish();
-    }
+                runOnUiThread(() -> {
+                    binding.progressBar.setVisibility(android.view.View.GONE);
+                    DecimalFormat df = new DecimalFormat("#.##");
+                    binding.tripDistanceTextView.setText(df.format(km) + " km");
+                    binding.tripDurationTextView.setText((int)Math.ceil(mins) + " min");
+                    binding.tripAmountTextView.setText("$" + df.format(total));
+                    binding.baseFareAmountTextView    .setText("$" + df.format(baseFare));
+                    binding.distanceFareAmountTextView.setText("$" + df.format(distanceFare));
+                    binding.serviceFeeAmountTextView   .setText("$" + df.format(serviceFee));
+                    binding.totalAmountTextView        .setText("$" + df.format(total));
+                });
 
-    private void onPaymentSheetResult(PaymentSheetResult paymentSheetResult) {
-        binding.progressBar.setVisibility(View.GONE);
-        binding.payButton.setEnabled(true);
+                // 2) create Stripe Price
+                FormBody priceBody = new FormBody.Builder()
+                        .add("unit_amount", String.valueOf(amountCents))
+                        .add("currency",    "usd")
+                        .add("product_data[name]", "Ride Fare")
+                        .build();
+                Request priceReq = new Request.Builder()
+                        .url("https://api.stripe.com/v1/prices")
+                        .post(priceBody)
+                        .header("Authorization", "Bearer " + STRIPE_SECRET_KEY)
+                        .build();
+                JSONObject priceJson = new JSONObject(client.newCall(priceReq).execute().body().string());
+                String priceId = priceJson.getString("id");
 
-        if (paymentSheetResult instanceof PaymentSheetResult.Completed) {
-            Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
+                // 3) create Payment Link
+                FormBody linkBody = new FormBody.Builder()
+                        .add("line_items[0][price]", priceId)
+                        .add("line_items[0][quantity]", "1")
+                        .add("after_completion[type]", "redirect")
+                        .add("after_completion[redirect][url]", "freeride://payment/success")
+                        .build();
+                Request linkReq = new Request.Builder()
+                        .url("https://api.stripe.com/v1/payment_links")
+                        .post(linkBody)
+                        .header("Authorization", "Bearer " + STRIPE_SECRET_KEY)
+                        .build();
+                Response linkResp = client.newCall(linkReq).execute();
+                String linkRespBody = linkResp.body().string();
+                Log.d(TAG, "Link response: " + linkRespBody);
+                JSONObject linkJson = new JSONObject(linkRespBody);
+                paymentLinkUrl = linkJson.getString("url");
 
-            Intent intent = new Intent(this, FeedbackActivity.class);
-            intent.putExtra("trip_amount", tripAmount);
-            intent.putExtra("trip_distance", tripDistance);
-            intent.putExtra("trip_duration", tripDuration);
-            startActivity(intent);
-            finish();
-        } else if (paymentSheetResult instanceof PaymentSheetResult.Canceled) {
-            Log.i(TAG, "Payment canceled by user");
-        } else if (paymentSheetResult instanceof PaymentSheetResult.Failed) {
-            PaymentSheetResult.Failed failed = (PaymentSheetResult.Failed) paymentSheetResult;
-            Log.e(TAG, "Payment failed", failed.getError());
-            Toast.makeText(this, "Payment failed: " + failed.getError().getLocalizedMessage(),
-                    Toast.LENGTH_LONG).show();
-        }
+                runOnUiThread(() -> binding.payButton.setEnabled(true));
+            } catch (Exception e) {
+                Log.e(TAG, "could not build link", e);
+                runOnUiThread(() -> {
+                    binding.progressBar.setVisibility(android.view.View.GONE);
+                    Toast.makeText(this, "Error generating link", Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
     }
 }

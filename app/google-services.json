@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "78682372708",
+    "project_id": "ia-ma-nene",
+    "storage_bucket": "ia-ma-nene.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:78682372708:android:8b4f4ab343f229ae353d71",
+        "android_client_info": {
+          "package_name": "com.cristeabogdan.freeride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABhzH85GfyU6MTpWkITOngPnkZxZPWzEI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

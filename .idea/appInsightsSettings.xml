@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.cristeabogdan.freeride" />
+                  <option name="mobileSdkAppId" value="1:78682372708:android:8b4f4ab343f229ae353d71" />
+                  <option name="projectId" value="ia-ma-nene" />
+                  <option name="projectNumber" value="78682372708" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

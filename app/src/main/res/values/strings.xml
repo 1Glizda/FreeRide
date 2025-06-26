@@ -16,6 +16,15 @@
     <string name="trip_end">Trip End</string>
     <string name="take_next_ride">Take Next Ride</string>
     <string name="route_not_available_choose_different_locations">Route Not Available: Choose different pickup and drop location</string>
+    <string name="back">Back</string>
+    <string name="ride_history">Ride History</string>
+    <string name="no_rides_yet">No rides yet</string>
+    <string name="ride_history_title">Ride History</string>
+    <string name="no_rides">No rides yet</string>
+    <string name="no_rides_message">Your ride history will appear here</string>
+    <string name="ride_history_placeholder">Your ride history will appear here</string>
+    <string name="failed_load_rides">Failed to load rides</string>
+    <string name="ride_history_empty_subtitle">Your ride history will appear here</string>
     <string name="google_maps_key">AIzaSyAwXM5CPJtv_GYIMgdv-AMW2wZSa5yzJjA</string>
     <string name="api_key">AIzaSyAwXM5CPJtv_GYIMgdv-AMW2wZSa5yzJjA</string>
 </resources>

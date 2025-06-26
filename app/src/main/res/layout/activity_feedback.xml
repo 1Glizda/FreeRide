@@ -24,19 +24,105 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Trip Summary -->
+        <!-- Trip Summary Header -->
         <TextView
             android:id="@+id/tripSummaryTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="Trip completed • 5.2 km • 23 min • $15.75"
             android:textColor="@android:color/darker_gray"
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/titleTextView" />
+
+        <!-- Distance, Duration, Fare Rows -->
+        <LinearLayout
+            android:id="@+id/tripDetailsLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            app:layout_constraintTop_toBottomOf="@id/tripSummaryTextView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Distance -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Distance"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:id="@+id/tripDistanceTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 km"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Duration -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Duration"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:id="@+id/tripDurationTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 min"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Fare -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Fare"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/darker_gray" />
+
+                <TextView
+                    android:id="@+id/tripAmountTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="$0.00"
+                    android:textSize="16sp"
+                    android:textColor="@android:color/black"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
 
         <!-- Rating Section -->
         <TextView
@@ -50,70 +136,21 @@
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tripSummaryTextView" />
+            app:layout_constraintTop_toBottomOf="@id/tripDetailsLayout" />
 
         <!-- Star Rating -->
-        <LinearLayout
-            android:id="@+id/starRatingLayout"
+        <RatingBar
+            android:id="@+id/ratingBar"
+            android:isIndicator="false"
+            android:numStars="5"
+            android:stepSize="1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ratingLabelTextView"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/ratingLabelTextView">
+            app:layout_constraintEnd_toEndOf="parent"/>
 
-            <ImageView
-                android:id="@+id/star1"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_margin="4dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:src="@android:drawable/btn_star_big_off"
-                android:contentDescription="1 star" />
 
-            <ImageView
-                android:id="@+id/star2"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_margin="4dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:src="@android:drawable/btn_star_big_off"
-                android:contentDescription="2 stars" />
-
-            <ImageView
-                android:id="@+id/star3"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_margin="4dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:src="@android:drawable/btn_star_big_off"
-                android:contentDescription="3 stars" />
-
-            <ImageView
-                android:id="@+id/star4"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_margin="4dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:src="@android:drawable/btn_star_big_off"
-                android:contentDescription="4 stars" />
-
-            <ImageView
-                android:id="@+id/star5"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_margin="4dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:src="@android:drawable/btn_star_big_off"
-                android:contentDescription="5 stars" />
-
-        </LinearLayout>
 
         <!-- Feedback Comment -->
         <TextView
@@ -121,12 +158,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:text="Additional Comments (Optional)"
+            android:text="Comments (Optional)"
             android:textColor="@android:color/black"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/starRatingLayout" />
+            app:layout_constraintTop_toBottomOf="@id/ratingBar" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/feedbackInputLayout"
@@ -156,9 +193,9 @@
             android:layout_height="56dp"
             android:layout_marginTop="32dp"
             android:layout_marginEnd="8dp"
-            android:background="@android:color/black"
+            android:background="@android:color/white"
             android:text="Submit Feedback"
-            android:textColor="@android:color/white"
+            android:textColor="@android:color/black"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@id/skipButton"
@@ -171,7 +208,7 @@
             android:layout_height="56dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="32dp"
-            android:background="@android:drawable/btn_default"
+            android:background="@color/light_grey"
             android:text="Skip"
             android:textColor="@android:color/black"
             android:textSize="16sp"
@@ -191,5 +228,4 @@
             app:layout_constraintTop_toBottomOf="@id/submitButton" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </ScrollView>

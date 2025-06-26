@@ -30,20 +30,11 @@
                 android:textSize="28sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="40dp"
-                android:text="Sign in to continue"
-                android:textColor="@android:color/darker_gray"
-                android:textSize="16sp" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginBottom="30dp"
                 android:hint="Email"
                 app:boxStrokeColor="@android:color/black">
 
@@ -74,9 +65,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
-                android:background="@android:color/black"
+                android:background="@color/colorPrimary"
                 android:text="Sign In"
-                android:textColor="@android:color/white"
+                android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -194,9 +185,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="16dp"
-                android:background="@android:color/black"
+                android:background="@android:color/white"
                 android:text="Sign Up"
-                android:textColor="@android:color/white"
+                android:textColor="@android:color/black"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
